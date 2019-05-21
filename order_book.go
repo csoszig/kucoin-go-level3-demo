@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/Kucoin/kucoin-go-level3-demo/helper"
 	"github.com/Kucoin/kucoin-go-sdk"
@@ -52,52 +51,7 @@ func (l3book *Level3OrderBook) ReloadOrderBook() {
 	helper.Info("symbol: %s start ReloadOrderBook", l3book.symbol)
 	l3book.resetOrderBook()
 
-	const tempMsgChanMaxLen = 50
-	tempMsgChan := make(chan *Level3StreamDataModel, tempMsgChanMaxLen)
-	tempMsgSequenceMap := make(map[string]bool)
-	lastAtomicFullOrderBookTime := time.Now()
-
-	helper.Warn("start playback...")
-	for msg := range l3book.Messages {
-		l3Data, err := NewLevel3StreamDataModel(msg)
-		if err != nil {
-			panic(err)
-		}
-
-		tempMsgChan <- l3Data
-		tempMsgSequenceMap[l3Data.Sequence] = true
-
-		if len(tempMsgChan) > 5 && time.Now().After(lastAtomicFullOrderBookTime.Add(time.Second)) {
-			lastAtomicFullOrderBookTime = time.Now()
-			fullOrderBook, err := l3book.getAtomicFullOrderBook()
-			if err != nil {
-				continue
-			}
-			if fullOrderBook.Sequence <= l3Data.Sequence { //string camp
-				if _, ok := tempMsgSequenceMap[fullOrderBook.Sequence]; ok {
-					l3book.lock.Lock()
-					l3book.fullOrderBook = fullOrderBook
-					l3book.lock.Unlock()
-
-					n := len(tempMsgChan)
-					for i := 0; i < n; i++ {
-						l3book.updateFromStream(<-tempMsgChan)
-					}
-					close(tempMsgChan)
-					break
-				} else {
-					continue
-				}
-			} else {
-				tempMsgChan = make(chan *Level3StreamDataModel, tempMsgChanMaxLen)
-				tempMsgSequenceMap = make(map[string]bool)
-				continue
-			}
-		} else if len(tempMsgChan) > tempMsgChanMaxLen-5 {
-			panic("playback failed, tempMsgChan is too long, retry...")
-		}
-	}
-	helper.Warn("finish playback.")
+	l3book.playback()
 
 	for msg := range l3book.Messages {
 		l3Data, err := NewLevel3StreamDataModel(msg)
@@ -108,12 +62,65 @@ func (l3book *Level3OrderBook) ReloadOrderBook() {
 	}
 }
 
+func (l3book *Level3OrderBook) playback() {
+	helper.Warn("prepare playback...")
+
+	const tempMsgChanMaxLen = 50
+	tempMsgChan := make(chan *Level3StreamDataModel, tempMsgChanMaxLen)
+	tempMsgSequenceMap := make(map[string]bool)
+	var fullOrderBook *FullOrderBookModel
+
+	for msg := range l3book.Messages {
+		l3Data, err := NewLevel3StreamDataModel(msg)
+		if err != nil {
+			panic(err)
+		}
+
+		tempMsgChan <- l3Data
+		tempMsgSequenceMap[l3Data.Sequence] = true
+
+		if len(tempMsgChan) > 5 {
+			if fullOrderBook == nil {
+				fullOrderBook, err = l3book.getAtomicFullOrderBook()
+				if err != nil {
+					continue
+				}
+			}
+
+			if fullOrderBook.Sequence <= l3Data.Sequence { //string camp
+				if _, ok := tempMsgSequenceMap[fullOrderBook.Sequence]; ok {
+					helper.Warn("sequence match, start playback, tempMsgChan: %d", len(tempMsgChan))
+
+					l3book.lock.Lock()
+					l3book.fullOrderBook = fullOrderBook
+					l3book.lock.Unlock()
+
+					n := len(tempMsgChan)
+					for i := 0; i < n; i++ {
+						l3book.updateFromStream(<-tempMsgChan)
+					}
+
+					helper.Warn("finish playback.")
+					break
+				} else {
+					fullOrderBook = nil
+				}
+			}
+
+			if len(tempMsgChan) > tempMsgChanMaxLen-5 {
+				panic("playback failed, tempMsgChan is too long, retry...")
+			}
+		}
+	}
+}
+
 func (l3book *Level3OrderBook) updateFromStream(msg *Level3StreamDataModel) {
 	//time.Now().UnixNano()
 	helper.Info("msg: %s", string(msg.GetRawMessage()))
 
-	//获取写锁
 	l3book.lock.Lock()
+	defer l3book.lock.Unlock()
+
 	skip, err := l3book.updateSequence(msg)
 	if err != nil {
 		panic(err)
@@ -122,8 +129,6 @@ func (l3book *Level3OrderBook) updateFromStream(msg *Level3StreamDataModel) {
 	if !skip {
 		l3book.updateOrderBook(msg)
 	}
-	//解除写锁
-	l3book.lock.Unlock()
 }
 
 func (l3book *Level3OrderBook) updateSequence(msg *Level3StreamDataModel) (bool, error) {
