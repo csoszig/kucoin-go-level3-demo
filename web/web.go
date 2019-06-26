@@ -6,23 +6,23 @@ import (
 	"runtime"
 	"time"
 
-	order_book "github.com/Kucoin/kucoin-go-level3-demo"
+	"github.com/Kucoin/kucoin-go-level3-demo/builder"
 )
 
 type Router struct {
-	port        string
-	l3OrderBook *order_book.Level3OrderBook
+	port          string
+	level3Builder *builder.Builder
 }
 
-func NewRouter(port string, l3OrderBook *order_book.Level3OrderBook) *Router {
+func NewRouter(port string, level3Builder *builder.Builder) *Router {
 	return &Router{
-		port:        port,
-		l3OrderBook: l3OrderBook,
+		port:          port,
+		level3Builder: level3Builder,
 	}
 }
 
 func (router *Router) index(w http.ResponseWriter, r *http.Request) {
-	data, err := router.l3OrderBook.SnapshotBytes()
+	data, err := router.level3Builder.SnapshotBytes()
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
