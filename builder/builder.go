@@ -40,17 +40,14 @@ func (b *Builder) resetOrderBook() {
 func (b *Builder) ReloadOrderBook() {
 	defer func() {
 		if r := recover(); r != nil {
-			//挂了就重试
 			log.Error("ReloadOrderBook panic : %v", r)
 			b.ReloadOrderBook()
 		}
 	}()
 
 	log.Warn("start running ReloadOrderBook, symbol: %s", b.symbol)
-	//重置状态
 	b.resetOrderBook()
 
-	//重放
 	b.playback()
 
 	for msg := range b.Messages {
@@ -59,8 +56,6 @@ func (b *Builder) ReloadOrderBook() {
 			panic(err)
 		}
 		b.updateFromStream(l3Data)
-
-		//todo 增加对每条消息time 的时间判断看在多少范围内 同时增加对时间进行比对监控消息更新性能
 	}
 }
 
@@ -87,17 +82,16 @@ func (b *Builder) playback() {
 
 		if len(tempMsgChan) > 5 {
 			if fullOrderBook == nil {
-				log.Warn("开始获取 %s 全量数据", b.symbol)
+				log.Warn("start %s GetAtomicFullOrderBook", b.symbol)
 				fullOrderBook, err = b.GetAtomicFullOrderBook()
 				if err != nil {
 					continue
 				}
-				log.Error("获取到全量数据, Sequence: %s", fullOrderBook.Sequence)
+				log.Error("finish GetAtomicFullOrderBook, Sequence: %s", fullOrderBook.Sequence)
 			}
 
-			//如果 小于 最开始的，则全量太小需要抛弃
 			if fullOrderBook != nil && fullOrderBook.Sequence < firstSequence {
-				log.Error("获取 %s 全量数据太小", fullOrderBook.Sequence)
+                log.Error("GetAtomicFullOrderBook Sequence: %s is too little", fullOrderBook.Sequence)
 				fullOrderBook = nil
 				continue
 			}
@@ -118,7 +112,7 @@ func (b *Builder) playback() {
 				break
 			}
 
-			if len(tempMsgChan) > tempMsgChanMaxLen-5 { //防止 chan 堵塞
+			if len(tempMsgChan) > tempMsgChanMaxLen-5 {
 				panic("playback failed, tempMsgChan is too long, retry...")
 			}
 		}
@@ -148,12 +142,8 @@ func (b *Builder) AddDepthToOrderBook(depth *DepthResponse) {
 }
 
 func (b *Builder) updateFromStream(msg *level3stream.StreamDataModel) {
-	//time.Now().UnixNano()
 	//log.Info("msg: %s", string(msg.GetRawMessage()))
-
-	//获取写锁
 	b.lock.Lock()
-	//解除写锁
 	defer b.lock.Unlock()
 
 	skip, err := b.updateSequence(msg)
@@ -170,12 +160,10 @@ func (b *Builder) updateSequence(msg *level3stream.StreamDataModel) (bool, error
 	fullOrderBookSequenceValue := b.fullOrderBook.Sequence
 	msgSequenceValue := helper.ParseUint64OrPanic(msg.Sequence)
 
-	//当前100, 101 > 100 跳过，即100需要跳过
 	if fullOrderBookSequenceValue+1 > msgSequenceValue {
 		return true, nil
 	}
 
-	//不连续
 	if fullOrderBookSequenceValue+1 != msgSequenceValue {
 		return false, errors.New(fmt.Sprintf(
 			"currentSequence: %d, msgSequence: %s, the sequence is not continuous, 当前chanLen: %d",
@@ -185,8 +173,6 @@ func (b *Builder) updateSequence(msg *level3stream.StreamDataModel) (bool, error
 		))
 	}
 
-	//更新
-	//!!! sequence 需要更新，通过判断 sequence 是否自增来校验数据完整性，否则重放数据。
 	b.fullOrderBook.Sequence = msgSequenceValue
 
 	return false, nil
@@ -194,35 +180,21 @@ func (b *Builder) updateSequence(msg *level3stream.StreamDataModel) (bool, error
 
 //todo 大单特别注意
 func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
-	//[3]string{"orderId", "price", "size"}
-	//var item = [3]string{msg.OrderId, msg.Price, msg.Size}
-
-	//统一处理交易方向
 	side := ""
 	matchSide := ""
 	switch msg.Side {
-	case level3stream.SellSide: //卖单
+	case level3stream.SellSide:
 		side = level3.AskSide
-		//!!! 卖单 更新 买盘 (maker 是买盘)
 		matchSide = level3.BidSide
-	case level3stream.BuySide: //买单
+	case level3stream.BuySide:
 		side = level3.BidSide
-		//!!! 买单 更新 卖盘 (maker 是卖盘)
 		matchSide = level3.AskSide
 	default:
 		panic("错误的side: " + msg.Side)
 	}
 
 	switch msg.Type {
-	case level3stream.MessageReceivedType: //不影响买卖盘，暂时不进行处理，以后可以作为分析 todo
-		//data := &level3.StreamDataReceivedModel{}
-		//if err := json.Unmarshal(msg.GetRawMessage(), data); err != nil {
-		//	panic(err)
-		//}
-
-		//if data.OrderType == level3.MarketOrderType {
-		//	log.Warn("市价单: " + string(msg.GetRawMessage()))
-		//}
+	case level3stream.MessageReceivedType:
 
 	case level3stream.MessageOpenType:
 		data := &level3stream.StreamDataOpenModel{}
@@ -241,14 +213,11 @@ func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 		}
 		b.fullOrderBook.AddOrder(side, order)
 
-	case level3stream.MessageDoneType: //已完成 从买卖盘中去掉 todo 后续可以分析撤单和成交的单情况
+	case level3stream.MessageDoneType:
 		data := &level3stream.StreamDataDoneModel{}
 		if err := json.Unmarshal(msg.GetRawMessage(), data); err != nil {
 			panic(err)
 		}
-		//if data.Reason == Level3MessageDoneFilled {
-		//	log.Warn("跟踪到订单 " + Level3MessageDoneFilled)
-		//}
 
 		b.fullOrderBook.RemoveByOrderId(side, data.OrderId)
 
@@ -263,25 +232,20 @@ func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 		}
 
 	case level3stream.MessageChangeType:
-		//只有 DC 的 stp 才会触发 change 消息
 		data := &level3stream.StreamDataChangeModel{}
 		if err := json.Unmarshal(msg.GetRawMessage(), data); err != nil {
 			panic(err)
 		}
-
-		//为了醒目
-		//log.Error("收到 #change# 消息: ", string(msg.GetRawMessage()))
 
 		if err := b.fullOrderBook.ChangeOrder(side, data.OrderId, data.NewSize); err != nil {
 			panic(err)
 		}
 
 	default:
-		panic("错误的 msg type: " + msg.Type)
+		panic("error msg type: " + msg.Type)
 	}
 }
 
-//获取买卖盘的快照
 func (b *Builder) Snapshot() (*FullOrderBook, error) {
 	data, err := b.SnapshotBytes()
 	if err != nil {
@@ -297,7 +261,6 @@ func (b *Builder) Snapshot() (*FullOrderBook, error) {
 }
 
 func (b *Builder) SnapshotBytes() ([]byte, error) {
-	////获取读锁
 	b.lock.RLock()
 	data, err := json.Marshal(b.fullOrderBook)
 	b.lock.RUnlock()
@@ -309,14 +272,12 @@ func (b *Builder) SnapshotBytes() ([]byte, error) {
 }
 
 func (b *Builder) GetPartOrderBook(number int) ([]byte, error) {
-	//防止切片使用出错
 	defer func() {
 		if r := recover(); r != nil {
 			log.Error("GetPartOrderBook panic : %v", r)
 		}
 	}()
 
-	////获取读锁
 	b.lock.RLock()
 	defer b.lock.RUnlock()
 
