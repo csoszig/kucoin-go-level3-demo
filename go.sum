@@ -1,7 +1,13 @@
+github.com/JetBlink/order_book v1.0.0 h1:1N603KwuwhU583yp3535lRUedTe30RxJk/B4lgYLf/I=
+github.com/JetBlink/order_book v1.0.0/go.mod h1:yTRhnilno42iOzwYqcbJxWaMuLJZvW5NBX8HA724xh8=
 github.com/Kucoin/kucoin-go-sdk v1.0.9 h1:Gv/LYyau92iYxzTBXGNr4HqW1iFskXSA0pAx2kyYNzI=
 github.com/Kucoin/kucoin-go-sdk v1.0.9/go.mod h1:ARJ2M1lwsdevKXfCHqcRn06KoSfJU+8NMTCWinCPnhc=
+github.com/Kucoin/kucoin-go-sdk v1.1.5 h1:dH6ITil0sJV5bUD9V6Oxcl0Kh46jsaYHHgLIHSn18J8=
+github.com/gopusher/gateway v0.0.0-20190404062018-af143b38d254 h1:Nf+QRN+W0VWlTW4DCJOb9lrWBgy8YC/ciGyJ5oaw5wY=
+github.com/gopusher/gateway v0.0.0-20190404062018-af143b38d254/go.mod h1:UvaydQsicLYZS0kWb2V7x2Svv/1hAG1Y/qICUatVmFM=
 github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=
 github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24 h1:pntxY8Ary0t43dCZ5dqY4YTJCObLY1kIXl0uzMv+7DE=

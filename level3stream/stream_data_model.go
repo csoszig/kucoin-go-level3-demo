@@ -1,11 +1,11 @@
-package order_book
+package level3stream
 
 import (
 	"encoding/json"
 )
 
-//Level 3 websocket stream data
-type Level3StreamDataModel struct {
+//Level 3 websocket 数据流
+type StreamDataModel struct {
 	Sequence   string `json:"sequence"`
 	Symbol     string `json:"symbol"`
 	Type       string `json:"type"`
@@ -13,18 +13,19 @@ type Level3StreamDataModel struct {
 	rawMessage json.RawMessage
 }
 
-func NewLevel3StreamDataModel(msgData json.RawMessage) (*Level3StreamDataModel, error) {
-	l3Data := &Level3StreamDataModel{}
+func NewStreamDataModel(msgData json.RawMessage) (*StreamDataModel, error) {
+	l3Data := &StreamDataModel{}
 
 	if err := json.Unmarshal(msgData, l3Data); err != nil {
 		return nil, err
 	}
+	//初始化 rawMessage
 	l3Data.rawMessage = msgData
 
 	return l3Data, nil
 }
 
-func (l3Data *Level3StreamDataModel) GetRawMessage() json.RawMessage {
+func (l3Data *StreamDataModel) GetRawMessage() json.RawMessage {
 	return l3Data.rawMessage
 }
 
@@ -35,36 +36,37 @@ const (
 	LimitOrderType  = "limit"
 	MarketOrderType = "market"
 
-	Level3MessageDoneCanceled = "canceled"
-	Level3MessageDoneFilled   = "filled"
+	MessageDoneCanceled = "canceled"
+	MessageDoneFilled   = "filled"
 
-	Level3MessageReceivedType = "received"
-	Level3MessageOpenType     = "open"
-	Level3MessageDoneType     = "done"
-	Level3MessageMatchType    = "match"
-	Level3MessageChangeType   = "change"
+	MessageReceivedType = "received"
+	MessageOpenType     = "open"
+	MessageDoneType     = "done"
+	MessageMatchType    = "match"
+	MessageChangeType   = "change"
 )
 
-type Level3StreamDataReceivedModel struct {
-	OrderType string `json:"orderType"`
+type StreamDataReceivedModel struct {
+	OrderType string `json:"orderType"` //可能为 limit | market
 	Side      string `json:"side"`
-	//Size      string `json:"size"`
-	Price string `json:"price"`
-	//Funds     string `json:"funds"`
+	//Size      string `json:"size"`  //可能存在可能不存在
+	Price string `json:"price"` //限价单才存在
+	//Funds     string `json:"funds"` //限价单肯定不存在, 市价单 可能存在可能不存在
 	OrderId   string `json:"orderId"`
 	Time      string `json:"time"`
 	ClientOid string `json:"clientOid"`
 }
 
-type Level3StreamDataOpenModel struct {
+type StreamDataOpenModel struct {
 	Side    string `json:"side"`
 	Size    string `json:"size"`
 	OrderId string `json:"orderId"`
 	Price   string `json:"price"`
 	Time    string `json:"time"`
+	//RemainSize string `json:"remainSize"`
 }
 
-type Level3StreamDataDoneModel struct {
+type StreamDataDoneModel struct {
 	Side    string `json:"side"`
 	Size    string `json:"size"`
 	Reason  string `json:"reason"`
@@ -73,7 +75,7 @@ type Level3StreamDataDoneModel struct {
 	Time    string `json:"time"`
 }
 
-type Level3StreamDataMatchModel struct {
+type StreamDataMatchModel struct {
 	Side         string `json:"side"`
 	Size         string `json:"size"`
 	Price        string `json:"price"`
@@ -83,7 +85,7 @@ type Level3StreamDataMatchModel struct {
 	TradeId      string `json:"tradeId"`
 }
 
-type Level3StreamDataChangeModel struct {
+type StreamDataChangeModel struct {
 	Side    string `json:"side"`
 	NewSize string `json:"newSize"`
 	OldSize string `json:"oldSize"`
