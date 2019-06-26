@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	"github.com/Kucoin/kucoin-go-level3-demo/builder"
+	"github.com/Kucoin/kucoin-go-level3-demo/log"
 	"github.com/Kucoin/kucoin-go-level3-demo/web"
 	"github.com/Kucoin/kucoin-go-sdk"
 )
@@ -59,7 +60,7 @@ func websocket(apiService *kucoin.ApiService, symbol string, level3Builder *buil
 			panic(err)
 
 		case msg := <-mc:
-			//helper.Info("raw message : %s", kucoin.ToJsonString(msg))
+			log.Info("received msg: %s", kucoin.ToJsonString(msg))
 			level3Builder.Messages <- msg.RawData
 		}
 	}
