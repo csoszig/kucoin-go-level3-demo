@@ -4,9 +4,8 @@
 
 ```
 go get github.com/Kucoin/kucoin-go-sdk
-go get github.com/shopspring/decimal
+go get github.com/JetBlink/order_book
 ```
-
 
 ### Usage
 
