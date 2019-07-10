@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/JetBlink/order_book/level3"
+	"github.com/JetBlink/orderbook/base"
+	"github.com/JetBlink/orderbook/level3"
 	"github.com/Kucoin/kucoin-go-level3-demo/helper"
 	"github.com/Kucoin/kucoin-go-level3-demo/level3stream"
 	"github.com/Kucoin/kucoin-go-level3-demo/log"
 	"github.com/Kucoin/kucoin-go-sdk"
+	"github.com/shopspring/decimal"
 )
 
 type Builder struct {
@@ -91,7 +93,7 @@ func (b *Builder) playback() {
 			}
 
 			if fullOrderBook != nil && fullOrderBook.Sequence < firstSequence {
-                log.Error("GetAtomicFullOrderBook Sequence: %s is too little", fullOrderBook.Sequence)
+				log.Error("GetAtomicFullOrderBook Sequence: %s is too little", fullOrderBook.Sequence)
 				fullOrderBook = nil
 				continue
 			}
@@ -123,21 +125,25 @@ func (b *Builder) AddDepthToOrderBook(depth *DepthResponse) {
 	b.fullOrderBook.Sequence = helper.ParseUint64OrPanic(depth.Sequence)
 
 	for index, elem := range depth.Asks {
-		order, err := level3.NewOrder(elem[0], elem[1], elem[2], uint64(index))
+		order, err := level3.NewOrder(elem[0], base.AskSide, elem[1], elem[2], uint64(index), nil)
 		if err != nil {
 			panic(err)
 		}
 
-		b.fullOrderBook.AddOrder(level3.AskSide, order)
+		if err := b.fullOrderBook.AddOrder(order); err != nil {
+			panic(err)
+		}
 	}
 
 	for index, elem := range depth.Bids {
-		order, err := level3.NewOrder(elem[0], elem[1], elem[2], uint64(index))
+		order, err := level3.NewOrder(elem[0], base.BidSide, elem[1], elem[2], uint64(index), nil)
 		if err != nil {
 			panic(err)
 		}
 
-		b.fullOrderBook.AddOrder(level3.BidSide, order)
+		if err := b.fullOrderBook.AddOrder(order); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -181,14 +187,11 @@ func (b *Builder) updateSequence(msg *level3stream.StreamDataModel) (bool, error
 //todo 大单特别注意
 func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 	side := ""
-	matchSide := ""
 	switch msg.Side {
 	case level3stream.SellSide:
-		side = level3.AskSide
-		matchSide = level3.BidSide
+		side = base.AskSide
 	case level3stream.BuySide:
-		side = level3.BidSide
-		matchSide = level3.AskSide
+		side = base.BidSide
 	default:
 		panic("错误的side: " + msg.Side)
 	}
@@ -206,12 +209,14 @@ func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 			return
 		}
 
-		order, err := level3.NewOrder(data.OrderId, data.Price, data.Size, helper.ParseUint64OrPanic(data.Time))
+		order, err := level3.NewOrder(data.OrderId, side, data.Price, data.Size, helper.ParseUint64OrPanic(data.Time), nil)
 		if err != nil {
 			log.Error(string(msg.GetRawMessage()))
 			panic(err)
 		}
-		b.fullOrderBook.AddOrder(side, order)
+		if err := b.fullOrderBook.AddOrder(order); err != nil {
+			panic(err)
+		}
 
 	case level3stream.MessageDoneType:
 		data := &level3stream.StreamDataDoneModel{}
@@ -219,7 +224,9 @@ func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 			panic(err)
 		}
 
-		b.fullOrderBook.RemoveByOrderId(side, data.OrderId)
+		if err := b.fullOrderBook.RemoveByOrderId(data.OrderId); err != nil {
+			panic(err)
+		}
 
 	case level3stream.MessageMatchType:
 		data := &level3stream.StreamDataMatchModel{}
@@ -227,7 +234,11 @@ func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 			panic(err)
 		}
 
-		if err := b.fullOrderBook.MatchOrder(matchSide, data.MakerOrderId, data.Size); err != nil {
+		sizeValue, err := decimal.NewFromString(data.Size)
+		if err != nil {
+			panic(err)
+		}
+		if err := b.fullOrderBook.MatchOrder(data.MakerOrderId, sizeValue); err != nil {
 			panic(err)
 		}
 
@@ -237,7 +248,11 @@ func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 			panic(err)
 		}
 
-		if err := b.fullOrderBook.ChangeOrder(side, data.OrderId, data.NewSize); err != nil {
+		sizeValue, err := decimal.NewFromString(data.NewSize)
+		if err != nil {
+			panic(err)
+		}
+		if err := b.fullOrderBook.ChangeOrder(data.OrderId, sizeValue); err != nil {
 			panic(err)
 		}
 
@@ -282,9 +297,9 @@ func (b *Builder) GetPartOrderBook(number int) ([]byte, error) {
 	defer b.lock.RUnlock()
 
 	data, err := json.Marshal(map[string]interface{}{
-		"sequence":     b.fullOrderBook.Sequence,
-		level3.AskSide: b.fullOrderBook.GetPartOrderBookBySide(level3.AskSide, number),
-		level3.BidSide: b.fullOrderBook.GetPartOrderBookBySide(level3.BidSide, number),
+		"sequence":   b.fullOrderBook.Sequence,
+		base.AskSide: b.fullOrderBook.GetPartOrderBookBySide(base.AskSide, number),
+		base.BidSide: b.fullOrderBook.GetPartOrderBookBySide(base.BidSide, number),
 	})
 
 	if err != nil {
