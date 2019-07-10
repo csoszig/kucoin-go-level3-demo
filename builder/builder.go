@@ -172,7 +172,7 @@ func (b *Builder) updateSequence(msg *level3stream.StreamDataModel) (bool, error
 
 	if fullOrderBookSequenceValue+1 != msgSequenceValue {
 		return false, errors.New(fmt.Sprintf(
-			"currentSequence: %d, msgSequence: %s, the sequence is not continuous, 当前chanLen: %d",
+			"currentSequence: %d, msgSequence: %s, the sequence is not continuous, current chanLen: %d",
 			b.fullOrderBook.Sequence,
 			msg.Sequence,
 			len(b.Messages),
@@ -184,7 +184,6 @@ func (b *Builder) updateSequence(msg *level3stream.StreamDataModel) (bool, error
 	return false, nil
 }
 
-//todo 大单特别注意
 func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 	side := ""
 	switch msg.Side {
@@ -193,7 +192,7 @@ func (b *Builder) updateOrderBook(msg *level3stream.StreamDataModel) {
 	case level3stream.BuySide:
 		side = base.BidSide
 	default:
-		panic("错误的side: " + msg.Side)
+		panic("error side: " + msg.Side)
 	}
 
 	switch msg.Type {
