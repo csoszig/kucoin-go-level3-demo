@@ -5,7 +5,8 @@ import (
 	"os"
 )
 
-var logger = log.New(os.Stdout, "", log.LstdFlags)
+var logger = CreateLogger()
+var fi *os.File
 
 func Info(format string, v ...interface{}) {
 	logger.Printf("[Info] "+format+"\n", v...)
@@ -21,4 +22,19 @@ func Error(format string, v ...interface{}) {
 
 func Fatal(format string, v ...interface{}) {
 	logger.Fatalf("\033[31m[Fatal] "+format+"\033[0m\n", v...)
+}
+
+func CreateLogger() *log.Logger {
+	f, err := os.OpenFile("text.log",
+	os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	fi = f
+	// defer f.Close()
+	return log.New(f, "", log.LstdFlags)
+}
+
+func CloseLogger() {
+	fi.Close()
 }

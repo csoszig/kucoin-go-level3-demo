@@ -6,6 +6,8 @@ import (
 	order_book "github.com/Kucoin/kucoin-go-level3-demo"
 	"github.com/Kucoin/kucoin-go-level3-demo/web"
 	"github.com/Kucoin/kucoin-go-sdk"
+	"github.com/Kucoin/kucoin-go-level3-demo/helper"
+
 )
 
 func main() {
@@ -19,6 +21,7 @@ func main() {
 	go r.Handle()
 
 	websocket(apiService, l3OrderBook)
+	defer helper.CloseLogger()
 }
 
 func getArgs() (string, string) {
