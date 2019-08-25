@@ -1,10 +1,11 @@
-github.com/Kucoin/kucoin-go-sdk v1.0.9 h1:Gv/LYyau92iYxzTBXGNr4HqW1iFskXSA0pAx2kyYNzI=
-github.com/Kucoin/kucoin-go-sdk v1.0.9/go.mod h1:ARJ2M1lwsdevKXfCHqcRn06KoSfJU+8NMTCWinCPnhc=
-github.com/Kucoin/kucoin-go-sdk v1.1.2 h1:l30dahT4odQmoZJTe2Rt+vgHFq7/bqUIrXiK8aUc2L4=
-github.com/Kucoin/kucoin-go-sdk v1.1.2/go.mod h1:GiBFQLo8XJVxuA6yqf08C9bB6tundgsDVZjEeiM+GKg=
+github.com/JetBlink/orderbook v1.0.0 h1:AQFbPxpTclvG0VrpNGbA3qbnqt34YKQm4UaE5jQQ/DU=
+github.com/JetBlink/orderbook v1.0.0/go.mod h1:APrs6/4hdmrla3cTiVsonDHkAt4jeviFiOsokXLzr08=
+github.com/Kucoin/kucoin-go-sdk v1.1.5 h1:dH6ITil0sJV5bUD9V6Oxcl0Kh46jsaYHHgLIHSn18J8=
+github.com/Kucoin/kucoin-go-sdk v1.1.5/go.mod h1:GiBFQLo8XJVxuA6yqf08C9bB6tundgsDVZjEeiM+GKg=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/gorilla/websocket v1.4.0 h1:WDFjx/TMzVgy9VdMMQi2K2Emtwi2QcUQsztZ/zLaH/Q=
 github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
+github.com/konsorten/go-windows-terminal-sequences v1.0.1 h1:mweAR1A6xJ3oS2pRaGiHgQ4OO8tzTaLawm8vnODuwDk=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

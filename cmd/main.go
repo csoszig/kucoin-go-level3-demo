@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 
-	order_book "github.com/Kucoin/kucoin-go-level3-demo"
+	"github.com/Kucoin/kucoin-go-level3-demo/builder"
+	"github.com/Kucoin/kucoin-go-level3-demo/log"
 	"github.com/Kucoin/kucoin-go-level3-demo/web"
 	"github.com/Kucoin/kucoin-go-sdk"
-	"github.com/Kucoin/kucoin-go-level3-demo/helper"
 
 )
 
@@ -14,14 +14,14 @@ func main() {
 	symbol, port := getArgs()
 
 	apiService := kucoin.NewApiServiceFromEnv()
-	l3OrderBook := order_book.NewLevel3OrderBook(apiService, symbol)
+	l3OrderBook := builder.NewBuilder(apiService, symbol)
 	go l3OrderBook.ReloadOrderBook()
 
 	r := web.NewRouter(port, l3OrderBook)
 	go r.Handle()
 
-	websocket(apiService, l3OrderBook)
-	defer helper.CloseLogger()
+	websocket(apiService, symbol, l3OrderBook)
+	defer log.CloseLogger()
 }
 
 func getArgs() (string, string) {
@@ -32,7 +32,7 @@ func getArgs() (string, string) {
 	return *symbol, *port
 }
 
-func websocket(apiService *kucoin.ApiService, l3OrderBook *order_book.Level3OrderBook) {
+func websocket(apiService *kucoin.ApiService, symbol string, level3Builder *builder.Builder) {
 	rsp, err := apiService.WebSocketPublicToken()
 	if err != nil {
 		panic(err)
@@ -50,7 +50,7 @@ func websocket(apiService *kucoin.ApiService, l3OrderBook *order_book.Level3Orde
 		panic(err)
 	}
 
-	ch := kucoin.NewSubscribeMessage("/market/level3:"+l3OrderBook.Symbol(), false)
+	ch := kucoin.NewSubscribeMessage("/market/level3:"+symbol, false)
 	if err := c.Subscribe(ch); err != nil {
 		panic(err)
 	}
@@ -62,8 +62,8 @@ func websocket(apiService *kucoin.ApiService, l3OrderBook *order_book.Level3Orde
 			panic(err)
 
 		case msg := <-mc:
-			//helper.Info("raw message : %s", kucoin.ToJsonString(msg))
-			l3OrderBook.Messages <- msg.RawData
+			log.Info("received msg: %s", kucoin.ToJsonString(msg))
+			level3Builder.Messages <- msg.RawData
 		}
 	}
 }
