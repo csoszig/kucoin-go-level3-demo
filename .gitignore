@@ -1,3 +1,6 @@
 .idea
 vendor
 kucoin-level3-for-*
+src
+pkg
+*.log

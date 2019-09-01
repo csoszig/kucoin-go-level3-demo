@@ -2,10 +2,9 @@ package main
 
 import (
 	"flag"
-
-	"github.com/Kucoin/kucoin-go-level3-demo/builder"
-	"github.com/Kucoin/kucoin-go-level3-demo/log"
-	"github.com/Kucoin/kucoin-go-level3-demo/web"
+	"../builder"
+	"../log"
+	"../web"
 	"github.com/Kucoin/kucoin-go-sdk"
 
 )

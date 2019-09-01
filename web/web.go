@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Kucoin/kucoin-go-level3-demo/builder"
+	"../builder"
 )
 
 type Router struct {

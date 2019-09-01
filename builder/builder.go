@@ -8,9 +8,9 @@ import (
 
 	"github.com/JetBlink/orderbook/base"
 	"github.com/JetBlink/orderbook/level3"
-	"github.com/Kucoin/kucoin-go-level3-demo/helper"
-	"github.com/Kucoin/kucoin-go-level3-demo/level3stream"
-	"github.com/Kucoin/kucoin-go-level3-demo/log"
+	"../helper"
+	"../level3stream"
+	"../log"
 	"github.com/Kucoin/kucoin-go-sdk"
 	"github.com/shopspring/decimal"
 )
