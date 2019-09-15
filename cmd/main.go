@@ -6,11 +6,18 @@ import (
 	"github.com/Kucoin/kucoin-go-level3-demo/builder"
 	"github.com/Kucoin/kucoin-go-level3-demo/log"
 	"github.com/Kucoin/kucoin-go-level3-demo/web"
+	"github.com/Kucoin/kucoin-go-level3-demo/slack"
 	"github.com/Kucoin/kucoin-go-sdk"
 
 )
 
 func main() {
+	slack.Init()
+	slack.SendMessage("IT WORKS!!!")
+	if true {
+		panic("Nope :(")
+	}
+
 	symbol, port := getArgs()
 
 	apiService := kucoin.NewApiServiceFromEnv()
